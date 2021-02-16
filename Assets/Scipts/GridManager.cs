@@ -93,4 +93,9 @@ public class GridManager : MonoSingletonGeneric<GridManager>
         Debug.Log("Game Ended");
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
+    private void OnDestroy()
+    {
+        EventManager.DisableInteractability -= CheckForGameCompletion;
+    }
 }
