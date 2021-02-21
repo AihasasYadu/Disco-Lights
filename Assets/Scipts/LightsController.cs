@@ -6,10 +6,9 @@ using UnityEngine.UI;
 public class LightsController : MonoBehaviour
 {
     private Button light;
-    private AlongDiagonalEnum currentDiag;
     private LightStatesEnum currentState;
+    private const int DIAG_LAYER = 9;
     public LightStatesEnum GetCurrentState { get { return currentState; } }
-    public AlongDiagonalEnum GetDiagonalDirection { get { return currentDiag; } }
     private void Start()
     {
         EventManager.DisableInteractability += DisableInteractive;
@@ -23,7 +22,7 @@ public class LightsController : MonoBehaviour
     {
         ChangeColorTo(Color.yellow);
         currentState = LightStatesEnum.Selected;
-        currentDiag = AlongDiagonalEnum.Both;
+        EventManager.Instance.ButtonClickedEvent(gameObject.transform);
         StartCoroutine(KillLight());
     }
 
@@ -37,18 +36,15 @@ public class LightsController : MonoBehaviour
 
     private IEnumerator KillLight()
     {
-        CallDisableEvent();
-        yield return new WaitForSeconds(2);
-        ChangeColorTo(Color.red);
         currentState = LightStatesEnum.Dead;
+        yield return new WaitForEndOfFrame();
+        CallDisableEvent();
+        yield return new WaitForSeconds(1);
+        ChangeColorTo(Color.red);
         EventManager.DisableInteractability -= DisableInteractive;
         EventManager.EnableInteractability -= MakeInteractive;
+        yield return new WaitForEndOfFrame();
         CallEnableEvent();
-    }
-
-    private void CallDisableEvent()
-    {
-        EventManager.Instance.DisableEvent();
     }
 
     private void CallEnableEvent()
@@ -56,9 +52,15 @@ public class LightsController : MonoBehaviour
         EventManager.Instance.EnableEvent();
     }
 
+    private void CallDisableEvent()
+    {
+        EventManager.Instance.DisableEvent();
+    }
+
     private void MakeInteractive()
     {
-        light.interactable = true;
+        if(currentState != LightStatesEnum.Dead)
+            light.interactable = true;
     }
 
     private void DisableInteractive()
@@ -66,73 +68,23 @@ public class LightsController : MonoBehaviour
         light.interactable = false;
     }
 
-    private void OnTriggerStay2D(Collider2D collision)
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        StartCoroutine(CheckStateInTrigger(collision));
-    }
-
-    private void OnCollisionStay2D(Collision2D collision)
-    {
-        StartCoroutine(CheckStateInCollision(collision));
-    }
-
-    private IEnumerator CheckStateInTrigger(Collider2D collision)
-    {
-        
-        while (currentState == LightStatesEnum.Alive)
+        if(collision.gameObject.layer.Equals(DIAG_LAYER) && (currentState == LightStatesEnum.Alive))
         {
-            LightsController temp = new LightsController();
-            if (collision.gameObject.GetComponent<LightsController>() != null && collision.GetType() == typeof(BoxCollider2D))
-            {
-                temp = collision.gameObject.GetComponent<LightsController>();
-            }
-            else
-            {
-                break;
-            }
-
-            if (temp.GetCurrentState == LightStatesEnum.Selected || temp.GetCurrentState == LightStatesEnum.Reachable)
-            {
-                if (temp.GetDiagonalDirection == AlongDiagonalEnum.Left || temp.GetDiagonalDirection == AlongDiagonalEnum.Both)
-                {
-                    SetLightsProperties(LightStatesEnum.Reachable, AlongDiagonalEnum.Left);
-                }
-            }
-            yield return null;
-        }
-    }
-    
-    private IEnumerator CheckStateInCollision(Collision2D collision)
-    {
-        
-        while (currentState == LightStatesEnum.Alive)
-        {
-            LightsController temp = new LightsController();
-            if (collision.gameObject.GetComponent<LightsController>() != null && collision.GetType() == typeof(CircleCollider2D))
-            {
-                temp = collision.gameObject.GetComponent<LightsController>();
-            }
-            else
-            {
-                break;
-            }
-
-            if (temp.GetCurrentState == LightStatesEnum.Selected || temp.GetCurrentState == LightStatesEnum.Reachable)
-            {
-                if (temp.GetDiagonalDirection == AlongDiagonalEnum.Right || temp.GetDiagonalDirection == AlongDiagonalEnum.Both)
-                {
-                    SetLightsProperties(LightStatesEnum.Reachable, AlongDiagonalEnum.Right);
-                }
-            }
-            yield return null;
+            SetLightsProperties();
         }
     }
 
-    private void SetLightsProperties(LightStatesEnum curr, AlongDiagonalEnum diag)
+    private void SetLightsProperties()
     {
-        currentDiag = diag;
-        currentState = curr;
         ChangeColorTo(Color.green);
         StartCoroutine(KillLight());
+    }
+
+    private void OnDestroy()
+    {
+        EventManager.DisableInteractability -= DisableInteractive;
+        EventManager.EnableInteractability -= MakeInteractive;
     }
 }

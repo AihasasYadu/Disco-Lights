@@ -3,9 +3,12 @@ using UnityEngine;
 
 public class EventManager : MonoSingletonGeneric<EventManager>
 {
-    public delegate void CheckConnected();
-    public static event CheckConnected DisableInteractability;
-    public static event CheckConnected EnableInteractability;
+    public delegate void Executable();
+    public static event Executable DisableInteractability;
+    public static event Executable EnableInteractability;
+
+    public delegate void Paramterized(Transform temp);
+    public static event Paramterized ButtonClickEvent;
 
     public void DisableEvent()
     {
@@ -15,5 +18,10 @@ public class EventManager : MonoSingletonGeneric<EventManager>
     public void EnableEvent()
     {
         EnableInteractability?.Invoke();
+    }
+
+    public void ButtonClickedEvent(Transform temp)
+    {
+        ButtonClickEvent?.Invoke(temp);
     }
 }
